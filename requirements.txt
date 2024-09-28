@@ -1,0 +1,3 @@
+luigi
+requests
+sqlalchemy<2.0
