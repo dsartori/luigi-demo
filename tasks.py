@@ -48,10 +48,6 @@ class FetchRates(luigi.Task):
         record_exists = cursor.fetchone()[0] > 0
         return record_exists
 
-    def get_existing_data(self, cursor):
-        cursor.execute("SELECT currency, date, rate FROM exchange_rate")
-        return [row for row in cursor.fetchall()]
-
 class GenerateReport(luigi.Task):
     def output(self):
         return luigi.LocalTarget('output/expense_report.csv')
@@ -69,11 +65,15 @@ class GenerateReport(luigi.Task):
                 e.exp_date as [Date], 
                 e.currency as [Transaction Currency], 
                 e.amount as [Amount],
-                (x.rate * e.amount) as [CAD Amount],
+                COALESCE(x.rate, (SELECT rate 
+                                  FROM exchange_rate sub_e
+                                  WHERE sub_e.currency = e.currency 
+                                  AND sub_e.rate IS NOT NULL 
+                                  ORDER BY sub_e.date desc limit 1)) * e.amount as [CAD Amount],
                 e.description as [Description]  
             FROM 
                 expenses e
-            INNER JOIN 
+            LEFT JOIN 
                 exchange_rate x ON e.currency = x.currency AND e.exp_date = x.date
         """)
         expenses = cursor.fetchall()
