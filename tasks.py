@@ -1,7 +1,6 @@
 import luigi
 import requests
 import sqlite3
-from datetime import date
 import logging
 import csv
 
@@ -15,6 +14,7 @@ class FetchRates(luigi.Task):
         currencies = ['FXUSDCAD', 'FXMXNCAD']  
         base_url = "https://www.bankofcanada.ca/valet/observations"
         for currency in currencies:
+            symbol = currency[2:5]
             url = f"{base_url}/{currency}/json"
             response = requests.get(url)
             data = response.json()
@@ -23,7 +23,7 @@ class FetchRates(luigi.Task):
             cursor = conn.cursor()
 
             if 'observations' not in data:
-                logger.error(f"Error fetching data for {currency[2:5]}: {data}")
+                logger.error(f"Error fetching data for {symbol}: {data}")
                 continue
 
             new_observations = [obs for obs in data['observations'] if not self.observation_exists(obs, cursor)]
@@ -33,7 +33,7 @@ class FetchRates(luigi.Task):
                     if currency in obs:
                         date = obs['d']
                         rate = obs[currency]['v']
-                        cursor.execute("INSERT OR IGNORE INTO exchange_rate (currency, date, rate) VALUES (?, ?, ?)", (currency[2:5], date, rate))
+                        cursor.execute("INSERT OR IGNORE INTO exchange_rate (currency, date, rate) VALUES (?, ?, ?)", (symbol, date, rate))
 
             conn.commit()
             conn.close()
@@ -114,6 +114,9 @@ class ImportExpenses(luigi.Task):
             cursor.execute("INSERT INTO expenses (employee, exp_date, currency, amount, description) VALUES (?, ?, ?, ?, ?)", (name, date, currency, amount, description))
         conn.commit()
         conn.close()
+        
+        with self.output().open('w') as f:
+            f.write(f'/tmp/{self.task_id}.txt')
 
     def get_expense_data(self, cursor):
         exchange_rate_data = []
@@ -127,7 +130,6 @@ class ImportExpenses(luigi.Task):
                 amount = float(row['amount'])
                 exchange_rate_data.append((name, date, description, currency, amount))
 
-        with self.output().open('w') as f:
-            f.write(f'/tmp/{self.task_id}.txt')
+
 
         return exchange_rate_data

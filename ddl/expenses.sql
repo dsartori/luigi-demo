@@ -1,3 +1,5 @@
+-- This file contains the DDL for the /app/expenses.db database.
+
 CREATE TABLE expenses (
     employee TEXT,
     exp_date date,
@@ -13,6 +15,8 @@ CREATE TABLE exchange_rate (
     PRIMARY KEY (currency, date)
 );
 
+
+-- Pre-populate exchange_rate table with CAD rate of 1.0 for each day since 2017-01-01
 WITH RECURSIVE date_series AS (
     SELECT DATE('2017-01-01') AS date
     UNION ALL
