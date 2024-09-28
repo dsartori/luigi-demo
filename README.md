@@ -6,7 +6,7 @@ This repository contains a simple demo of [Luigi](https://github.com/spotify/lui
 To get started with this project, clone the repository and build the Docker container:
 
 ```bash
-git clone https://github.com/yourusername/luigi-demo.git
+git clone https://github.com/dsartori/luigi-demo.git
 cd luigi-demo
 docker build -t luigi-demo .
 ```
